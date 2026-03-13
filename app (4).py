@@ -238,7 +238,7 @@ with tab1:
     fig1.update_traces(marker_line_width=0)
     apply_layout(fig1)
     st.plotly_chart(fig1, width="stretch")
-    insight("The 23–27 cohort is your largest segment — digitally native, income-earning, and highly brand-aware. The strong female representation signals a clear opportunity for inclusive athleisure and yoga-wellness lines beyond the male-dominated performance market.")
+    insight("Your biggest audience is 23–27 year olds who are earning their first salaries and actively spending on lifestyle. Women make up a significant share — which means this isn't just a gym-wear brand. There's a real opportunity in yoga, casual athleisure, and everyday activewear that speaks to both men and women equally.")
 
     col1, col2 = st.columns(2)
 
@@ -254,7 +254,7 @@ with tab1:
         apply_layout(fig2, height=360)
         fig2.update_layout(showlegend=False)
         st.plotly_chart(fig2, width="stretch")
-        insight("Metro + Tier 1 users account for the majority of respondents — this is your launch geography. Tier 2 shows meaningful presence, signalling a fast-follower expansion opportunity once the core market is captured.")
+        insight("The bulk of your early customers are in metros and large cities — that's where you launch first and build brand credibility. But Tier 2 cities are already showing strong interest. Once you've proven the model in metros, expanding to Tier 2 becomes a natural and low-risk growth move.")
 
     # Chart 3 — Workout frequency × intent
     with col2:
@@ -274,7 +274,7 @@ with tab1:
         fig3.update_traces(marker_line_width=0)
         apply_layout(fig3, height=360)
         st.plotly_chart(fig3, width="stretch")
-        insight("Users who train 3–7 days per week show disproportionately high 'Yes' intent — your most committed adopters are the most active. Target gym-goers and runners in acquisition campaigns for the highest ROI on your marketing spend.")
+        insight("People who work out regularly are far more likely to download and use this app. This is your core customer — someone who takes fitness seriously and is already spending on it. Showing up where they are (gyms, running tracks, fitness content on Instagram and YouTube) will give you the best return on every rupee of marketing spend.")
 
     # Chart 4 — Top 5 fitness goals
     section("Top Fitness Goals", "What motivates your target audience")
@@ -297,7 +297,7 @@ with tab1:
     fig4.update_traces(marker_line_width=0)
     apply_layout(fig4, height=340)
     st.plotly_chart(fig4, width="stretch")
-    insight("General health and weight loss are the top motivators — not elite performance. This means your app's personalised recommendation engine should speak the language of wellness and transformation, not just athletic achievement. Positioning the brand around 'everyday fitness' will maximise addressable market.")
+    insight("Most people aren't training for a marathon or a competition — they just want to feel healthier and look better. This tells you exactly how to position the brand: not intimidating sports performance, but approachable everyday wellness. That framing opens the door to a much larger audience than a traditional sports brand would reach.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -387,7 +387,7 @@ with tab2:
                             xaxis_title="Number of Clusters (K)",
                             yaxis_title="Inertia (WCSS)")
     st.plotly_chart(fig_elbow, width="stretch")
-    insight("The elbow is clearly visible at K=5 — the rate of inertia reduction flattens meaningfully after K=5. This aligns with market intuition: five personas map to identifiable real-world buyer archetypes. Using K=4 would merge distinct segments; K=6 creates over-fragmented micro-segments with limited strategic value.")
+    insight("The data naturally groups your customers into 5 distinct types of buyers. Going with fewer groups would lump together people with very different needs; going with more would split hairs unnecessarily. Five is the sweet spot — each group is large enough to build a real product strategy around.")
 
     # Assign personas
     data_cl = data_cl.copy()
@@ -448,7 +448,7 @@ with tab2:
         fig_cs.update_layout(showlegend=False)
         apply_layout(fig_cs, height=380)
         st.plotly_chart(fig_cs, width="stretch")
-        insight("Casual Gym-Goers and Deal Seekers form the bulk of the market — your volume segments. Serious Athletes are smaller but highest LTV. Design your pricing tiers and loyalty structure to upsell Gym-Goers into Athletes over time.")
+        insight("Most of your customers are casual gym-goers and bargain hunters — that's your volume. But Serious Athletes, though fewer in number, spend significantly more per purchase and come back more often. The smart play is to bring people in at the casual level and gradually earn their way up to becoming loyal, high-spending customers.")
 
     # Avg spend per cluster
     with col2:
@@ -464,7 +464,7 @@ with tab2:
         fig_spend.update_traces(textposition="outside", marker_line_width=0)
         apply_layout(fig_spend, height=380)
         st.plotly_chart(fig_spend, width="stretch")
-        insight("The spend gap between Serious Athletes and Deal Seekers reveals a 2–3× revenue multiplier from targeting the right segment. Your premium tier (performance gear + personalised coaching bundles) should be priced and marketed exclusively to Athletes and Eco-Conscious Buyers.")
+        insight("Your top-spending customers spend 2–3 times more than your lowest-spending ones. That gap is your opportunity. A premium product tier — better gear, personalised recommendations, exclusive drops — targeted at Athletes and Eco-Conscious buyers could dramatically increase your average revenue per customer without needing more users.")
 
     # Heatmap
     section("Cluster Feature Heatmap", "Mean standardised values per segment — higher = more dominant trait")
@@ -482,7 +482,7 @@ with tab2:
     fig_heat.update_layout(**PLOTLY_LAYOUT, height=400,
                            coloraxis_colorbar=dict(title="Std Value", tickfont=dict(color="#e6edf3")))
     st.plotly_chart(fig_heat, width="stretch")
-    insight("The heatmap is your personalisation blueprint. Each persona has 2–3 dominant features that should drive their in-app experience: Athletes see performance gear first; Eco Buyers see material certifications; Deal Seekers see flash sale banners. One app, five different first-screen experiences.")
+    insight("Every customer type cares about something different when they open the app. Athletes want the best gear front and centre. Eco-conscious buyers want to know what the product is made of. Deal seekers want to see what's on sale. A great app shows each person exactly what matters to them the moment they open it — and this data tells you exactly how to do that.")
 
     # Persona selector
     section("Persona Deep-Dive", "Select a segment to explore its profile")
@@ -602,7 +602,7 @@ with tab3:
         metrics_df.style.applymap(lambda _: "background-color: #161b22; color: #e6edf3"),
         width="stretch", hide_index=True
     )
-    insight(f"**{clf_choice}** achieves the best balance of precision and recall on a 3-class problem (Yes / Maybe / No). The 'Maybe' class is deliberately kept as a separate label rather than binarised — it represents a high-value re-targeting segment that shouldn't be discarded as churn.")
+    insight(f"The model can reliably predict whether a given person will download the app or not. Crucially, the 'Maybe' group isn't ignored — these are people who are genuinely interested but not quite ready. That's not a lost customer; that's someone worth a follow-up offer. Treating them separately means you're not wasting budget on people who've already said no.")
 
     col1, col2 = st.columns(2)
 
@@ -621,7 +621,7 @@ with tab3:
         fig_cm.update_layout(**PLOTLY_LAYOUT, height=400,
                              coloraxis_colorbar=dict(tickfont=dict(color="#e6edf3")))
         st.plotly_chart(fig_cm, width="stretch")
-        insight("Strong diagonal dominance means the model rarely misclassifies 'No' as 'Yes' — the costly error in marketing is sending acquisition budget to non-intenders. The model is calibrated to minimise that false positive rate.")
+        insight("The model is very good at avoiding the most expensive mistake in marketing — spending money trying to acquire someone who was never going to download the app anyway. By correctly identifying who's a genuine prospect and who isn't, the model helps ensure your acquisition budget goes only to people worth targeting.")
 
     # Feature importance
     with col2:
@@ -645,7 +645,7 @@ with tab3:
         fig_fi.update_traces(marker_line_width=0)
         apply_layout(fig_fi, height=420)
         st.plotly_chart(fig_fi, width="stretch")
-        insight("Feature importance reveals which signals to prioritise in your onboarding flow. The top predictors are your registration form — ask about workout frequency, flash sale interest, and sustainability values in the app sign-up to immediately score and segment new users for personalisation.")
+        insight("The data tells you which questions to ask a new user the moment they sign up. Things like how often they work out, whether they're drawn to deals, and whether sustainability matters to them are the biggest indicators of how engaged they'll be. A short, well-designed onboarding questionnaire — 3 to 4 questions — is all you need to start personalising their experience from day one.")
 
     # Predicted adoption KPI
     section("Predicted Adoption Rate", "Model-estimated % of target market saying Yes")
@@ -657,7 +657,7 @@ with tab3:
         (f"{pct_pred_maybe}%", "Predicted 'Maybe' Rate", "Re-targetable warm leads"),
         (f"{pct_pred_yes + pct_pred_maybe:.1f}%", "Total Addressable Intent", "Yes + Maybe combined"),
     ])
-    insight(f"With {pct_pred_yes}% hard 'Yes' intent and {pct_pred_maybe}% warm 'Maybe' leads, your total addressable adopter pool is {pct_pred_yes + pct_pred_maybe:.1f}% of the urban 18–35 segment. A 30% conversion of 'Maybe' users would lift your active user base by an additional {pct_pred_maybe * 0.3:.1f}% — achievable through targeted push notification campaigns and first-purchase discount offers.")
+    insight(f"{pct_pred_yes}% of your target market is ready to download right now. Another {pct_pred_maybe}% are on the fence — they like the idea but haven't committed. If you can convince just 3 in 10 of those fence-sitters, your total user base grows by an additional {pct_pred_maybe * 0.3:.1f}%. A first-purchase discount or a well-timed reminder is often all it takes to convert that group.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -749,7 +749,7 @@ with tab4:
             }).style.background_gradient(subset=["Lift ↑"], cmap="Blues"),
             width="stretch", hide_index=True
         )
-        insight("High-lift rules (>1.5) reveal non-obvious co-preferences that surveys don't surface directly. Use these as your in-app recommendation logic: when a user adds performance activewear to their cart, recommend the associated feature or product. This is your personalisation engine blueprint.")
+        insight("The table above shows which features and products your customers want together — combinations that wouldn't be obvious just by asking them. For example, if someone is browsing running gear, they're very likely to also want order tracking and size guidance. Surfacing those things automatically, without the user having to search, is what makes an app feel smart and personal rather than just a catalogue.")
 
         # Scatter — Support vs Confidence
         section("Support vs Confidence", "Coloured by Lift — bubble = rule strength")
@@ -763,7 +763,7 @@ with tab4:
         fig_sc.update_layout(**PLOTLY_LAYOUT, height=420,
                              coloraxis_colorbar=dict(title="Lift", tickfont=dict(color="#e6edf3")))
         st.plotly_chart(fig_sc, width="stretch")
-        insight("Rules in the top-right quadrant (high support AND high confidence) are your most reliable cross-sell pairs — they appear frequently AND reliably co-occur. Rules with high lift but lower support are niche but powerful triggers for personalisation in specific user segments.")
+        insight("Dots in the top-right of this chart represent the safest product pairings — features and products that many customers want together, consistently. These are your best bet for in-app recommendations and bundle promotions. The dots in the top-left are niche pairings — less common, but when they appear, they're very reliable signals for specific types of customers.")
 
     col1, col2 = st.columns(2)
 
@@ -781,7 +781,7 @@ with tab4:
         fig_feat.update_traces(textposition="outside", marker_line_width=0)
         apply_layout(fig_feat, height=420)
         st.plotly_chart(fig_feat, width="stretch")
-        insight("Order tracking and Browse & Buy dominate feature demand — these are your table-stakes features that must be flawless at launch. Outfit Builder and Sustainability Info are your differentiators — features that major platforms don't offer and that build strong brand loyalty.")
+        insight("Some features — like order tracking and easy browsing — are simply expected. Customers won't praise you for having them, but they'll leave if you don't. The more interesting story is in the features below those: the Outfit Builder and Sustainability Info are things customers genuinely want but can't find on Amazon or Myntra. These are the features that give you a reason to exist as a standalone app.")
 
     # Product category preferences
     with col2:
@@ -797,7 +797,7 @@ with tab4:
         fig_prod.update_traces(textposition="outside", marker_line_width=0)
         apply_layout(fig_prod, height=420)
         st.plotly_chart(fig_prod, width="stretch")
-        insight("Performance activewear and casual athleisure lead — validating the core thesis of this brand. More importantly, the high interest in accessories signals a strong average order value opportunity: bundle accessories into the outfit builder feature to drive ₹200–₹500 incremental revenue per transaction.")
+        insight("Performance gear and everyday casual wear are your two core categories — which confirms the brand direction. But the strong interest in accessories is the hidden opportunity here. A pair of leggings is a ₹1,200 purchase. Add a water bottle, a gym bag, and a resistance band, and that basket becomes ₹2,000. Nudging customers towards accessories at the right moment in the shopping journey is one of the simplest ways to grow revenue per order.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -890,7 +890,7 @@ with tab5:
 
     best_model_name = max(reg_results, key=lambda k: reg_results[k]["r2"])
     best_res = reg_results[best_model_name]
-    insight(f"**{best_model_name}** achieves the best R² of {best_res['r2']:.3f}, explaining {best_res['r2']*100:.1f}% of variance in monthly sportswear spend. The MAE of ₹{best_res['mae']:,.0f} means the model's spend predictions are reliable enough to power a dynamic pricing and discount engine within the app — personalise discount depth based on predicted spend capacity.")
+    insight(f"The model can estimate how much a given customer is likely to spend each month, based on their profile and habits. In practice, this means the app can quietly figure out whether someone is a high spender or a budget buyer — and tailor what it shows them accordingly. A high spender sees the premium collection first. A budget buyer sees the best deals. No one feels out of place.")
 
     # Actual vs Predicted
     section("Actual vs Predicted Spend", f"Best model: {best_model_name}")
@@ -915,7 +915,7 @@ with tab5:
     apply_layout(fig_avp, height=440)
     fig_avp.update_layout(legend=dict(font=dict(color="#e6edf3")))
     st.plotly_chart(fig_avp, width="stretch")
-    insight("The scatter is tightest for mid-range spenders (₹1,500–₹5,000) — your core revenue band. High-end luxury spenders (>₹8,000) are under-predicted, suggesting the model is conservative. In practice this is useful: when the model predicts high spend, the actual spend will be even higher — a safe signal to unlock premium features for these users.")
+    insight("The model works best for your largest group of customers — those spending between ₹1,500 and ₹5,000 a month. For your highest spenders, the model's estimates tend to be on the conservative side, meaning the actual spend is often even higher than predicted. That's a good problem to have: when the model flags someone as a high spender, you can be confident they're worth offering your best products and most exclusive experiences to.")
 
     # Market sizing
     section("Total Addressable Revenue", "Projecting from survey signals to market scale")
@@ -968,7 +968,7 @@ with tab5:
         funnelmode="stack",
     )
     st.plotly_chart(fig_funnel, width="stretch")
-    insight(f"Even at the conservative end — capturing only the hard 'Yes' segment at winsorized WTP — the annual GMV opportunity is ₹{rev_conservative*12:.0f} Crore. The optimistic scenario (capturing 30% of warm leads) represents a ₹{rev_optimistic*12:.0f} Crore annual market. With a 15–20% take rate on GMV, this translates to ₹{rev_conservative*12*0.175:.0f}–₹{rev_optimistic*12*0.175:.0f} Crore net revenue — a compelling unit economics story for Series A.")
+    insight(f"Even if you only reach the people who said they'd definitely download the app, the annual revenue opportunity is ₹{{rev_conservative*12:.0f}} Crore. If you also convert a third of the 'maybe' group, that number rises to ₹{{rev_optimistic*12:.0f}} Crore. Assuming the app earns around 15–20% of every purchase made through it, that translates to ₹{{rev_conservative*12*0.175:.0f}}–₹{{rev_optimistic*12*0.175:.0f}} Crore in net revenue annually — and this is based purely on survey data, before any growth or word-of-mouth is factored in.")
 
     # WTP distribution
     section("WTP Distribution", "Shape of willingness-to-pay across the filtered segment")
@@ -988,4 +988,4 @@ with tab5:
     fig_wtp.update_traces(marker_line_width=0)
     apply_layout(fig_wtp, height=380)
     st.plotly_chart(fig_wtp, width="stretch")
-    insight(f"The WTP distribution is right-skewed with a long tail of high-value buyers (₹5,000–₹15,000/month). The median of ₹{df['Q24_wtp_monthly_inr'].median():,.0f} is your mass-market price point; the mean of ₹{df['Q24_wtp_monthly_inr'].mean():,.0f} is inflated by premium buyers. Use the median for your base subscription pricing and design a premium tier to capture the top 20% who drive disproportionate revenue.")
+    insight(f"Most customers are comfortable spending around ₹{{df['Q24_wtp_monthly_inr'].median():,.0f}} a month on this app — that's your sweet spot for standard pricing. But a smaller group is willing to spend ₹5,000 or more, and they'll happily pay for a premium experience if you build one. A two-tier pricing structure — an accessible base plan and a premium plan with exclusive perks — lets you serve both groups without leaving money on the table.")
