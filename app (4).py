@@ -129,7 +129,7 @@ PLOTLY_LAYOUT = dict(
     paper_bgcolor="#0d1117",
     plot_bgcolor="#161b22",
     font=dict(family="Inter, sans-serif", color="#e6edf3"),
-    title_font=dict(size=15, color="#e6edf3"),
+    title=dict(text="", font=dict(size=15, color="#e6edf3")),
     margin=dict(l=20, r=20, t=50, b=20),
 )
 ACCENT  = ["#1f6feb", "#3fb950", "#e3b341", "#f78166", "#79c0ff", "#d2a8ff", "#56d364"]
