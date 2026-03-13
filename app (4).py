@@ -335,206 +335,215 @@ with tab1:
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — CUSTOMER SEGMENTS
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Module-level constants (referenced in tab2 and cached functions)
+CLUSTER_FEATURES = [
+    "Q7_workout_days_enc", "Q11_current_monthly_spend_inr",
+    "Q17_sustainability_importance", "Q18_community_challenge_likelihood",
+    "Q19_flash_sale_likelihood", "Q13_factor_style", "Q13_factor_fabric_quality",
+    "Q16_feat_outfit_builder", "Q16_feat_sustainability_info",
+]
+FEATURE_LABELS = {
+    "Q7_workout_days_enc": "Workout Days",
+    "Q11_current_monthly_spend_inr": "Monthly Spend",
+    "Q17_sustainability_importance": "Sustainability",
+    "Q18_community_challenge_likelihood": "Community",
+    "Q19_flash_sale_likelihood": "Flash Sales",
+    "Q13_factor_style": "Style Factor",
+    "Q13_factor_fabric_quality": "Fabric Quality",
+    "Q16_feat_outfit_builder": "Outfit Builder",
+    "Q16_feat_sustainability_info": "Eco Info",
+}
+PERSONA_DESC = {
+    "🏋️ Serious Athlete": "These are your best customers. They work out almost every day, spend the most on gear, and care deeply about fabric and performance. Get the product right for them and they'll become your loudest advocates.",
+    "🌿 Eco-Conscious Buyer": "They want to feel good about what they buy — not just how it looks. Sustainability credentials, material sourcing, and ethical manufacturing matter to this group. Transparency is your best marketing tool with them.",
+    "💅 Fashion-First Buyer": "For this group, sportswear is as much about looking good as performing well. They're active on Instagram, respond to influencer content, and would love an outfit builder feature. Style over specs.",
+    "🎽 Casual Gym-Goer": "Your largest segment. They work out a few times a week, spend moderately, and want an easy, reliable shopping experience. No-fuss, good value, and trustworthy recommendations will keep them coming back.",
+    "⚡ Deal Seeker": "They're motivated by offers, flash sales, and getting the best price. Easy to acquire with a promotion, but they need ongoing reasons to stay. Limited drops and referral rewards work well for this group.",
+}
+ALL_PERSONA_NAMES = list(PERSONA_DESC.keys())
+
+
+@st.cache_data
+def run_kmeans_cached(data_tuple, k=5):
+    """Receives data as a tuple of tuples for hashability."""
+    import numpy as np
+    data = pd.DataFrame(list(data_tuple), columns=CLUSTER_FEATURES)
+    scaler = StandardScaler()
+    X = scaler.fit_transform(data)
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    labels = km.fit_predict(X)
+    return labels.tolist(), scaler
+
+
+@st.cache_data
+def run_elbow_cached(data_tuple):
+    import numpy as np
+    data = pd.DataFrame(list(data_tuple), columns=CLUSTER_FEATURES)
+    X = StandardScaler().fit_transform(data)
+    inertias = []
+    for k in range(2, 11):
+        km_ = KMeans(n_clusters=k, random_state=42, n_init=10)
+        km_.fit(X)
+        inertias.append(float(km_.inertia_))
+    return inertias
+
+
+def assign_persona(row):
+    """Deterministic persona assignment based on highest standardised feature."""
+    if row["Q7_workout_days_enc"] > 0.8 and row["Q11_current_monthly_spend_inr"] > 0.6:
+        return "🏋️ Serious Athlete"
+    elif row["Q17_sustainability_importance"] > 0.8:
+        return "🌿 Eco-Conscious Buyer"
+    elif row["Q13_factor_style"] > 0.6 and row["Q16_feat_outfit_builder"] > 0.4:
+        return "💅 Fashion-First Buyer"
+    elif row["Q19_flash_sale_likelihood"] > 0.6:
+        return "⚡ Deal Seeker"
+    else:
+        return "🎽 Casual Gym-Goer"
+
+
 with tab2:
-    st.markdown('<div class="hero"><h1>🧠 5 Buyer Personas</h1><p>K-Means clustering on behavioural + attitudinal features reveals distinct segments to personalise your app experience</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero"><h1>🧠 5 Buyer Personas</h1><p>Survey respondents grouped into 5 distinct customer types — each needing a different app experience, pricing tier, and marketing message</p></div>', unsafe_allow_html=True)
 
-    CLUSTER_FEATURES = [
-        "Q7_workout_days_enc", "Q11_current_monthly_spend_inr",
-        "Q17_sustainability_importance", "Q18_community_challenge_likelihood",
-        "Q19_flash_sale_likelihood", "Q13_factor_style", "Q13_factor_fabric_quality",
-        "Q16_feat_outfit_builder", "Q16_feat_sustainability_info",
-    ]
-    FEATURE_LABELS = {
-        "Q7_workout_days_enc": "Workout Days",
-        "Q11_current_monthly_spend_inr": "Monthly Spend",
-        "Q17_sustainability_importance": "Sustainability",
-        "Q18_community_challenge_likelihood": "Community",
-        "Q19_flash_sale_likelihood": "Flash Sales",
-        "Q13_factor_style": "Style Factor",
-        "Q13_factor_fabric_quality": "Fabric Quality",
-        "Q16_feat_outfit_builder": "Outfit Builder",
-        "Q16_feat_sustainability_info": "Eco Info",
-    }
-    PERSONA_NAMES = {
-        0: "🏋️ Serious Athlete",
-        1: "🌿 Eco-Conscious Buyer",
-        2: "💅 Fashion-First Buyer",
-        3: "🎽 Casual Gym-Goer",
-        4: "⚡ Deal Seeker",
-    }
-    PERSONA_DESC = {
-        0: "High workout frequency, high spend, values fabric quality and performance. These are your power users — they'll pay premium for the right gear and become brand evangelists if the experience is right.",
-        1: "Moderate activity, strong sustainability scores, interested in eco-certification info. Less price-sensitive than average. Target with sustainability badges, material transparency, and green loyalty rewards.",
-        2: "Driven by style and aesthetics. Moderate spend, high outfit-builder feature demand. Social media is their discovery channel. Influencer collaborations and outfit builder feature are your conversion levers.",
-        3: "3–4 workout days, mid-range spend, moderate on most axes. Your largest segment and your core recurring revenue base. They want ease-of-use, good value, and reliable recommendations.",
-        4: "Flash sale and discount driven, lower baseline spend but high price sensitivity. Easy to acquire with promotions but lower LTV. Engage with limited-edition drops and referral incentives.",
-    }
+    # ── Guard: need at least 50 rows and all 5 clusters viable ──────────────
+    cluster_data_raw = df[CLUSTER_FEATURES].dropna()
+    MIN_ROWS = 50
 
-    @st.cache_data
-    def run_kmeans(df_hash, k=5):
-        df_c = df_full.copy()
-        if city_filter:
-            df_c = df_c[df_c["Q3_city_tier"].isin(city_filter)]
-        if gender_filter:
-            df_c = df_c[df_c["Q2_gender"].isin(gender_filter)]
-        if intent_filter:
-            df_c = df_c[df_c["Q25_app_download_intent"].isin(intent_filter)]
-        data = df_c[CLUSTER_FEATURES].dropna()
-        scaler = StandardScaler()
-        X = scaler.fit_transform(data)
-        km = KMeans(n_clusters=k, random_state=42, n_init=10)
-        labels = km.fit_predict(X)
-        return data, X, labels, km, scaler
+    if len(cluster_data_raw) < MIN_ROWS:
+        st.warning(
+            f"⚠️ Only **{len(cluster_data_raw)} respondents** match the current filters — "
+            f"not enough to run clustering reliably (minimum: {MIN_ROWS}). "
+            "Please broaden your sidebar filters to see the segment analysis."
+        )
+    else:
+        # Convert to hashable tuple for @st.cache_data
+        data_tuple = tuple(cluster_data_raw.itertuples(index=False, name=None))
 
-    data_cl, X_cl, labels_cl, km_model, scaler_cl = run_kmeans(
-        hash(tuple(city_filter + gender_filter + intent_filter))
-    )
+        # Run KMeans and elbow (both cached correctly at module level)
+        labels_list, scaler_cl = run_kmeans_cached(data_tuple, k=5)
+        inertias = run_elbow_cached(data_tuple)
 
-    # Elbow curve
-    section("Elbow Curve", "Inertia vs K — justifying K=5")
-    @st.cache_data
-    def elbow(df_hash):
-        d, _, _, _, _ = run_kmeans(df_hash)
-        sc = StandardScaler()
-        Xd = sc.fit_transform(d)
-        inertias = []
-        for k in range(2, 11):
-            km_ = KMeans(n_clusters=k, random_state=42, n_init=10)
-            km_.fit(Xd)
-            inertias.append(km_.inertia_)
-        return inertias
+        # Rebuild working dataframe
+        data_cl = cluster_data_raw.copy().reset_index(drop=True)
+        data_cl["cluster"] = labels_list
 
-    inertias = elbow(hash(tuple(city_filter + gender_filter + intent_filter)))
-    fig_elbow = go.Figure()
-    fig_elbow.add_trace(go.Scatter(
-        x=list(range(2, 11)), y=inertias,
-        mode="lines+markers",
-        line=dict(color="#58a6ff", width=3),
-        marker=dict(size=8, color=["#f78166" if k == 5 else "#58a6ff" for k in range(2, 11)]),
-        name="Inertia"
-    ))
-    fig_elbow.add_vline(x=5, line_dash="dash", line_color="#e3b341",
-                        annotation_text="  K=5 (selected)", annotation_font_color="#e3b341")
-    fig_elbow.update_layout(**PLOTLY_LAYOUT, height=380,
-                            xaxis_title="Number of Clusters (K)",
-                            yaxis_title="Inertia (WCSS)")
-    st.plotly_chart(fig_elbow, width="stretch")
-    insight("The data naturally groups your customers into 5 distinct types of buyers. Going with fewer groups would lump together people with very different needs; going with more would split hairs unnecessarily. Five is the sweet spot — each group is large enough to build a real product strategy around.")
+        # Persona assignment
+        cluster_profiles = data_cl.groupby("cluster")[CLUSTER_FEATURES].mean()
+        cluster_profiles_scaled = pd.DataFrame(
+            scaler_cl.transform(cluster_profiles),
+            index=cluster_profiles.index,
+            columns=cluster_profiles.columns
+        )
 
-    # Assign personas
-    data_cl = data_cl.copy()
-    data_cl["cluster"] = labels_cl
+        # Map each cluster → persona, ensuring all 5 names are unique
+        cluster_to_persona = {}
+        seen_personas = set()
+        for idx in cluster_profiles_scaled.index:
+            p = assign_persona(cluster_profiles_scaled.loc[idx])
+            if p in seen_personas:
+                remaining = [x for x in ALL_PERSONA_NAMES if x not in seen_personas]
+                p = remaining[0] if remaining else f"Segment {idx}"
+            cluster_to_persona[idx] = p
+            seen_personas.add(p)
 
-    # Sort clusters by mean spend → assign persona names consistently
-    cluster_spend = data_cl.groupby("cluster")["Q11_current_monthly_spend_inr"].mean().sort_values(ascending=False)
+        data_cl["persona"] = data_cl["cluster"].map(cluster_to_persona)
 
-    # Map clusters to persona slots by workout days + sustainability
-    cluster_profiles = data_cl.groupby("cluster")[CLUSTER_FEATURES].mean()
-    cluster_profiles_scaled = pd.DataFrame(
-        scaler_cl.transform(cluster_profiles),
-        index=cluster_profiles.index,
-        columns=cluster_profiles.columns
-    )
+        # ── Elbow curve ──────────────────────────────────────────────────────
+        section("Elbow Curve", "How we arrived at 5 segments")
+        fig_elbow = go.Figure()
+        fig_elbow.add_trace(go.Scatter(
+            x=list(range(2, 11)), y=inertias,
+            mode="lines+markers",
+            line=dict(color="#58a6ff", width=3),
+            marker=dict(size=8, color=["#f78166" if k == 5 else "#58a6ff" for k in range(2, 11)]),
+            name="Inertia"
+        ))
+        fig_elbow.add_vline(x=5, line_dash="dash", line_color="#e3b341",
+                            annotation_text="  K=5 (selected)", annotation_font_color="#e3b341")
+        fig_elbow.update_layout(**PLOTLY_LAYOUT, height=380,
+                                xaxis_title="Number of Clusters (K)",
+                                yaxis_title="Inertia (WCSS)")
+        st.plotly_chart(fig_elbow, width="stretch")
+        insight("The data naturally groups your customers into 5 distinct types of buyers. Going with fewer groups would lump together people with very different needs; going with more would split hairs unnecessarily. Five is the sweet spot — each group is large enough to build a real product strategy around.")
 
-    # Heuristic persona assignment based on dominant features
-    def assign_persona(row):
-        if row["Q7_workout_days_enc"] > 0.8 and row["Q11_current_monthly_spend_inr"] > 0.6:
-            return "🏋️ Serious Athlete"
-        elif row["Q17_sustainability_importance"] > 0.8:
-            return "🌿 Eco-Conscious Buyer"
-        elif row["Q13_factor_style"] > 0.6 and row["Q16_feat_outfit_builder"] > 0.4:
-            return "💅 Fashion-First Buyer"
-        elif row["Q19_flash_sale_likelihood"] > 0.6:
-            return "⚡ Deal Seeker"
+        col1, col2 = st.columns(2)
+
+        # ── Cluster size bar chart ───────────────────────────────────────────
+        with col1:
+            section("Segment Sizes", "How many respondents per persona")
+            cs = data_cl["persona"].value_counts().reset_index()
+            cs.columns = ["persona", "count"]
+            cs["pct"] = (cs["count"] / cs["count"].sum() * 100).round(1)
+            fig_cs = px.bar(cs, x="persona", y="count", color="persona",
+                            color_discrete_sequence=ACCENT,
+                            text=cs["pct"].astype(str) + "%",
+                            labels={"persona": "", "count": "Respondents"})
+            fig_cs.update_traces(textposition="outside", marker_line_width=0)
+            fig_cs.update_layout(showlegend=False)
+            apply_layout(fig_cs, height=380)
+            st.plotly_chart(fig_cs, width="stretch")
+            insight("Most of your customers are casual gym-goers and bargain hunters — that's your volume. But Serious Athletes, though fewer in number, spend significantly more per purchase and come back more often. The smart play is to bring people in at the casual level and gradually earn their way up to becoming loyal, high-spending customers.")
+
+        # ── Avg spend per cluster ────────────────────────────────────────────
+        with col2:
+            section("Avg Monthly Spend by Segment", "Current spending baseline per persona")
+            spend_c = data_cl.groupby("persona")["Q11_current_monthly_spend_inr"].mean().reset_index()
+            spend_c.columns = ["persona", "avg_spend"]
+            spend_c = spend_c.sort_values("avg_spend", ascending=True)
+            fig_spend = px.bar(spend_c, x="avg_spend", y="persona", orientation="h",
+                               color="avg_spend", color_continuous_scale=["#1f4080", "#58a6ff"],
+                               text=spend_c["avg_spend"].apply(lambda x: f"₹{x:,.0f}"),
+                               labels={"avg_spend": "Avg Monthly Spend (₹)", "persona": ""})
+            fig_spend.update_coloraxes(showscale=False)
+            fig_spend.update_traces(textposition="outside", marker_line_width=0)
+            apply_layout(fig_spend, height=380)
+            st.plotly_chart(fig_spend, width="stretch")
+            insight("Your top-spending customers spend 2–3 times more than your lowest-spending ones. That gap is your opportunity. A premium product tier — better gear, personalised recommendations, exclusive drops — targeted at Athletes and Eco-Conscious buyers could dramatically increase your average revenue per customer without needing more users.")
+
+        # ── Heatmap ──────────────────────────────────────────────────────────
+        section("Segment Behaviour Heatmap", "What each persona cares about most")
+        heat_data = data_cl.groupby("persona")[CLUSTER_FEATURES].mean()
+        if len(heat_data) > 1:
+            heat_values = StandardScaler().fit_transform(heat_data)
         else:
-            return "🎽 Casual Gym-Goer"
+            heat_values = heat_data.values  # skip scaling if only 1 persona
+        heat_scaled = pd.DataFrame(
+            heat_values,
+            index=heat_data.index,
+            columns=[FEATURE_LABELS[c] for c in CLUSTER_FEATURES]
+        )
+        fig_heat = px.imshow(
+            heat_scaled,
+            color_continuous_scale=["#0d1117", "#1f4080", "#58a6ff", "#79c0ff"],
+            aspect="auto",
+            text_auto=".2f",
+            labels=dict(x="Feature", y="Persona", color="Std Value"),
+        )
+        fig_heat.update_layout(**PLOTLY_LAYOUT, height=400,
+                               coloraxis_colorbar=dict(title="Std Value", tickfont=dict(color="#e6edf3")))
+        st.plotly_chart(fig_heat, width="stretch")
+        insight("Every customer type cares about something different when they open the app. Athletes want the best gear front and centre. Eco-conscious buyers want to know what the product is made of. Deal seekers want to see what's on sale. A great app shows each person exactly what matters to them the moment they open it — and this data tells you exactly how to do that.")
 
-    cluster_to_persona = {
-        idx: assign_persona(cluster_profiles_scaled.loc[idx])
-        for idx in cluster_profiles_scaled.index
-    }
-    # Ensure uniqueness (fallback)
-    seen = set()
-    all_personas = list(PERSONA_NAMES.values())
-    for k in cluster_to_persona:
-        if cluster_to_persona[k] in seen:
-            remaining = [p for p in all_personas if p not in seen]
-            cluster_to_persona[k] = remaining[0] if remaining else f"Segment {k}"
-        seen.add(cluster_to_persona[k])
+        # ── Persona deep-dive ────────────────────────────────────────────────
+        section("Persona Deep-Dive", "Select a segment to explore its profile")
+        persona_options = sorted(data_cl["persona"].unique().tolist())
+        selected_persona = st.selectbox("Select Persona", options=persona_options, key="persona_sel")
+        cluster_df = data_cl[data_cl["persona"] == selected_persona]
 
-    data_cl["persona"] = data_cl["cluster"].map(cluster_to_persona)
+        # Safe KPI extraction with fallbacks
+        seg_size = len(cluster_df)
+        avg_spend_seg = cluster_df["Q11_current_monthly_spend_inr"].mean() if seg_size > 0 else 0
+        workout_mode_series = cluster_df["Q7_workout_days_enc"].map({0: "0 days", 1: "1-2 days", 2: "3-4 days", 3: "5-7 days"}).dropna()
+        workout_mode = workout_mode_series.mode()[0] if len(workout_mode_series) > 0 else "N/A"
 
-    col1, col2 = st.columns(2)
+        p_cols = st.columns(3)
+        p_cols[0].markdown(f'<div class="kpi-card"><div class="kpi-value">{seg_size:,}</div><div class="kpi-label">Segment Size</div></div>', unsafe_allow_html=True)
+        p_cols[1].markdown(f'<div class="kpi-card"><div class="kpi-value">₹{avg_spend_seg:,.0f}</div><div class="kpi-label">Avg Monthly Spend</div></div>', unsafe_allow_html=True)
+        p_cols[2].markdown(f'<div class="kpi-card"><div class="kpi-value">{workout_mode}</div><div class="kpi-label">Typical Workout Days</div></div>', unsafe_allow_html=True)
 
-    # Cluster size bar chart
-    with col1:
-        section("Segment Sizes", "How many respondents per persona")
-        cs = data_cl["persona"].value_counts().reset_index()
-        cs.columns = ["persona", "count"]
-        cs["pct"] = (cs["count"] / cs["count"].sum() * 100).round(1)
-        fig_cs = px.bar(cs, x="persona", y="count", color="persona",
-                        color_discrete_sequence=ACCENT,
-                        text=cs["pct"].astype(str) + "%",
-                        labels={"persona": "", "count": "Respondents"})
-        fig_cs.update_traces(textposition="outside", marker_line_width=0)
-        fig_cs.update_layout(showlegend=False)
-        apply_layout(fig_cs, height=380)
-        st.plotly_chart(fig_cs, width="stretch")
-        insight("Most of your customers are casual gym-goers and bargain hunters — that's your volume. But Serious Athletes, though fewer in number, spend significantly more per purchase and come back more often. The smart play is to bring people in at the casual level and gradually earn their way up to becoming loyal, high-spending customers.")
-
-    # Avg spend per cluster
-    with col2:
-        section("Avg Monthly Spend by Segment", "Current spending baseline per persona")
-        spend_c = data_cl.groupby("persona")["Q11_current_monthly_spend_inr"].mean().reset_index()
-        spend_c.columns = ["persona", "avg_spend"]
-        spend_c = spend_c.sort_values("avg_spend", ascending=True)
-        fig_spend = px.bar(spend_c, x="avg_spend", y="persona", orientation="h",
-                           color="avg_spend", color_continuous_scale=["#1f4080", "#58a6ff"],
-                           text=spend_c["avg_spend"].apply(lambda x: f"₹{x:,.0f}"),
-                           labels={"avg_spend": "Avg Monthly Spend (₹)", "persona": ""})
-        fig_spend.update_coloraxes(showscale=False)
-        fig_spend.update_traces(textposition="outside", marker_line_width=0)
-        apply_layout(fig_spend, height=380)
-        st.plotly_chart(fig_spend, width="stretch")
-        insight("Your top-spending customers spend 2–3 times more than your lowest-spending ones. That gap is your opportunity. A premium product tier — better gear, personalised recommendations, exclusive drops — targeted at Athletes and Eco-Conscious buyers could dramatically increase your average revenue per customer without needing more users.")
-
-    # Heatmap
-    section("Cluster Feature Heatmap", "Mean standardised values per segment — higher = more dominant trait")
-    heat_data = data_cl.groupby("persona")[CLUSTER_FEATURES].mean()
-    heat_scaled = pd.DataFrame(StandardScaler().fit_transform(heat_data),
-                                index=heat_data.index,
-                                columns=[FEATURE_LABELS[c] for c in CLUSTER_FEATURES])
-    fig_heat = px.imshow(
-        heat_scaled,
-        color_continuous_scale=["#0d1117", "#1f4080", "#58a6ff", "#79c0ff"],
-        aspect="auto",
-        text_auto=".2f",
-        labels=dict(x="Feature", y="Persona", color="Std Value"),
-    )
-    fig_heat.update_layout(**PLOTLY_LAYOUT, height=400,
-                           coloraxis_colorbar=dict(title="Std Value", tickfont=dict(color="#e6edf3")))
-    st.plotly_chart(fig_heat, width="stretch")
-    insight("Every customer type cares about something different when they open the app. Athletes want the best gear front and centre. Eco-conscious buyers want to know what the product is made of. Deal seekers want to see what's on sale. A great app shows each person exactly what matters to them the moment they open it — and this data tells you exactly how to do that.")
-
-    # Persona selector
-    section("Persona Deep-Dive", "Select a segment to explore its profile")
-    selected_persona = st.selectbox("Select Persona", options=list(cluster_to_persona.values()), key="persona_sel")
-    cluster_df = data_cl[data_cl["persona"] == selected_persona]
-
-    p_cols = st.columns(3)
-    p_cols[0].markdown(f'<div class="kpi-card"><div class="kpi-value">{len(cluster_df):,}</div><div class="kpi-label">Segment Size</div></div>', unsafe_allow_html=True)
-    p_cols[1].markdown(f'<div class="kpi-card"><div class="kpi-value">₹{cluster_df["Q11_current_monthly_spend_inr"].mean():,.0f}</div><div class="kpi-label">Avg Monthly Spend</div></div>', unsafe_allow_html=True)
-    p_cols[2].markdown(f'<div class="kpi-card"><div class="kpi-value">{cluster_df["Q7_workout_days_enc"].map({0:"0d",1:"1-2d",2:"3-4d",3:"5-7d"}).mode()[0]}</div><div class="kpi-label">Typical Workout Days</div></div>', unsafe_allow_html=True)
-
-    persona_key = selected_persona
-    desc_map = {
-        "🏋️ Serious Athlete": PERSONA_DESC[0],
-        "🌿 Eco-Conscious Buyer": PERSONA_DESC[1],
-        "💅 Fashion-First Buyer": PERSONA_DESC[2],
-        "🎽 Casual Gym-Goer": PERSONA_DESC[3],
-        "⚡ Deal Seeker": PERSONA_DESC[4],
-    }
-    st.markdown(f'<div class="insight-box"><div class="label">Persona Profile — {selected_persona}</div><p>{desc_map.get(persona_key, "Unique behavioural profile based on survey responses.")}</p></div>', unsafe_allow_html=True)
+        desc_text = PERSONA_DESC.get(selected_persona, "Unique behavioural profile based on survey responses.")
+        st.markdown(f'<div class="insight-box"><div class="label">Persona Profile — {selected_persona}</div><p>{desc_text}</p></div>', unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
