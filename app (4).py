@@ -97,14 +97,28 @@ hr { border-color: #21262d; margin: 24px 0; }
 /* Hero banner */
 .hero {
     background: linear-gradient(135deg, #0d1117 0%, #0d2136 50%, #0d1117 100%);
-    border: 1px solid #1f6feb33;
-    border-radius: 16px;
-    padding: 32px 36px;
+    border: 1px solid #1f6feb55;
+    border-radius: 20px;
+    padding: 44px 48px 40px;
     margin-bottom: 28px;
     text-align: center;
 }
-.hero h1 { color: #58a6ff; font-size: 32px; font-weight: 800; margin: 0 0 8px 0; }
-.hero p { color: #8b949e; font-size: 15px; margin: 0; }
+.hero-eyebrow { color: #3fb950; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 14px; }
+.hero h1 { color: #ffffff; font-size: 38px; font-weight: 900; margin: 0 0 10px 0; line-height: 1.15; }
+.hero h1 span { color: #58a6ff; }
+.hero-sub { color: #8b949e; font-size: 15px; margin: 0 auto 22px; max-width: 640px; line-height: 1.7; }
+.hero-pills { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.hero-pill {
+    background: #1f6feb18;
+    color: #79c0ff;
+    border: 1px solid #1f6feb44;
+    border-radius: 24px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.hero-pill.green { background: #3fb95018; color: #56d364; border-color: #3fb95044; }
+.hero-pill.yellow { background: #e3b34118; color: #f0c060; border-color: #e3b34144; }
 
 /* Badge */
 .badge {
@@ -212,17 +226,35 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # TAB 1 — MARKET OVERVIEW
 # ══════════════════════════════════════════════════════════════════════════════
 with tab1:
-    st.markdown('<div class="hero"><h1>⚡ The Market Opportunity</h1><p>Survey of 2,000 young urban Indians aged 18–35 — your core target demographic</p></div>', unsafe_allow_html=True)
-
-    # KPIs
-    pct_yes  = round((df["Q25_app_download_intent"] == "Yes").mean() * 100, 1)
+    # KPIs (computed first so we can embed them in the hero)
+    pct_yes   = round((df["Q25_app_download_intent"] == "Yes").mean() * 100, 1)
     avg_spend = round(df["Q11_current_monthly_spend_inr"].mean(), 0)
     avg_wtp   = round(df["Q24_wtp_monthly_inr"].mean(), 0)
+
+    st.markdown(f'''
+    <div class="hero">
+        <div class="hero-eyebrow">📊 Investor Research Dashboard — D2C Sportswear & Athleisure</div>
+        <h1>Building India's Most Personalised<br><span>Sportswear App</span> for the Next Generation</h1>
+        <p class="hero-sub">
+            A data-driven pitch backed by a primary survey of <strong style="color:#e6edf3">2,000 young urban Indians aged 18–35</strong>.
+            This dashboard answers the three questions every investor asks:
+            <em>Is there a market? Who is the customer? How much will they spend?</em>
+        </p>
+        <div class="hero-pills">
+            <span class="hero-pill">🎯 &nbsp;{pct_yes}% ready to download</span>
+            <span class="hero-pill green">💰 &nbsp;₹{avg_spend:,.0f} avg monthly spend today</span>
+            <span class="hero-pill yellow">📈 &nbsp;₹{avg_wtp:,.0f} avg willingness to pay in-app</span>
+            <span class="hero-pill">🏙️ &nbsp;Metro + Tier 1 + Tier 2 coverage</span>
+            <span class="hero-pill green">🧠 &nbsp;5 distinct buyer personas identified</span>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+
     kpi_row([
-        (f"{len(df):,}", "Total Respondents", "Filtered dataset"),
-        (f"{pct_yes}%", "Would Download App", "Strong intent signal"),
-        (f"₹{avg_spend:,.0f}", "Avg Monthly Spend", "Current sportswear"),
-        (f"₹{avg_wtp:,.0f}", "Avg WTP in App", "Willingness to pay"),
+        (f"{len(df):,}", "Survey Respondents", "Primary research, 18–35 age group"),
+        (f"{pct_yes}%", "Would Download the App", f"That's {int(len(df)*pct_yes/100):,} people in this filtered view alone"),
+        (f"₹{avg_spend:,.0f}", "Spent on Sportswear Today", "Monthly average — before discovering this app"),
+        (f"₹{avg_wtp:,.0f}", "Willing to Pay via App", "Monthly willingness — the revenue opportunity"),
     ])
     st.markdown("<br>", unsafe_allow_html=True)
 
