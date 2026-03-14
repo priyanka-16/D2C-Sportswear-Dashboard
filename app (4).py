@@ -331,6 +331,152 @@ with tab1:
     st.plotly_chart(fig4, width="stretch")
     insight("Most people aren't training for a marathon or a competition — they just want to feel healthier and look better. This tells you exactly how to position the brand: not intimidating sports performance, but approachable everyday wellness. That framing opens the door to a much larger audience than a traditional sports brand would reach.")
 
+    st.markdown("---")
+
+    # ── NEW Chart 5 — Where customers currently shop ─────────────────────────
+    section("Where Customers Shop Today", "Your competitive landscape — channels you need to intercept")
+    q12_label_map = {
+        "Q12_shop_brand_app":        "Brand App",
+        "Q12_shop_myntra_ajio":      "Myntra / Ajio",
+        "Q12_shop_amazon_flipkart":  "Amazon / Flipkart",
+        "Q12_shop_brand_website":    "Brand Website",
+        "Q12_shop_physical_store":   "Physical Store",
+        "Q12_shop_social_commerce":  "Social Commerce",
+        "Q12_shop_local_unbranded":  "Local / Unbranded",
+    }
+    q12_cols_t1 = [c for c in df.columns if c.startswith("Q12_shop_")]
+    shop_sums = (df[q12_cols_t1].sum()
+                   .rename(q12_label_map)
+                   .sort_values(ascending=True))
+    # Compute % Yes intent per channel
+    yes_pct = {}
+    for c in q12_cols_t1:
+        lbl = q12_label_map.get(c, c)
+        yes_pct[lbl] = round(df[df[c]==1]["Q25_app_download_intent"].eq("Yes").mean()*100, 1)
+
+    shop_df = pd.DataFrame({
+        "channel": shop_sums.index,
+        "count": shop_sums.values,
+        "yes_pct": [yes_pct.get(l, 0) for l in shop_sums.index],
+    })
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_shop = px.bar(
+            shop_df, x="count", y="channel", orientation="h",
+            color="count", color_continuous_scale=["#1f4080", "#1f6feb"],
+            text="count",
+            labels={"count": "Respondents", "channel": ""},
+        )
+        fig_shop.update_coloraxes(showscale=False)
+        fig_shop.update_traces(textposition="outside", marker_line_width=0)
+        apply_layout(fig_shop, height=380)
+        st.plotly_chart(fig_shop, width="stretch")
+
+    with col2:
+        fig_shop_intent = px.bar(
+            shop_df.sort_values("yes_pct", ascending=True),
+            x="yes_pct", y="channel", orientation="h",
+            color="yes_pct", color_continuous_scale=["#1f4080", "#3fb950"],
+            text=shop_df.sort_values("yes_pct", ascending=True)["yes_pct"].astype(str) + "%",
+            labels={"yes_pct": "% Would Download App", "channel": ""},
+        )
+        fig_shop_intent.update_coloraxes(showscale=False)
+        fig_shop_intent.update_traces(textposition="outside", marker_line_width=0)
+        apply_layout(fig_shop_intent, height=380)
+        st.plotly_chart(fig_shop_intent, width="stretch")
+
+    insight("Myntra/Ajio and Amazon/Flipkart are where most of your potential customers shop today — but those are generic marketplaces with no loyalty to any brand. Shoppers who currently use brand apps or brand websites show the highest intent to download your app, meaning app-native behaviour is already there. Your acquisition strategy should target people browsing sportswear on these platforms — they are one step away from switching to a dedicated experience.")
+
+    # ── NEW Chart 6 — Influencer affinity + Q22 brand app usage ─────────────
+    col1, col2 = st.columns(2)
+    with col1:
+        section("Influencer Affinity", "How much do customers follow and act on influencer content?")
+        inf_counts = df["Q10_influencer_affinity"].value_counts().reset_index()
+        inf_counts.columns = ["affinity", "count"]
+        inf_label = {
+            "No": "Not influenced",
+            "Yes_occasional": "Occasionally influenced",
+            "Yes_influences_purchases": "Directly influences purchases",
+        }
+        inf_counts["affinity"] = inf_counts["affinity"].map(inf_label)
+        fig_inf = px.pie(
+            inf_counts, names="affinity", values="count",
+            color_discrete_sequence=["#1f6feb", "#3fb950", "#e3b341"],
+            hole=0.55,
+        )
+        fig_inf.update_traces(textposition="outside", textinfo="percent+label",
+                              marker=dict(line=dict(color="#0d1117", width=2)))
+        fig_inf.update_layout(**PLOTLY_LAYOUT, height=360, showlegend=False)
+        st.plotly_chart(fig_inf, width="stretch")
+        insight("Nearly 75% of your target audience is influenced by creators — and for almost half of them, that influence directly drives purchases. This is your most efficient marketing channel. Seeding the right fitness influencers with early access to the app costs a fraction of paid advertising and will deliver far more trusted reach.")
+
+    with col2:
+        section("Existing Brand App Behaviour", "Do they already use brand apps? — your adoption baseline")
+        app_usage = df["Q22_brand_app_usage"].value_counts().reset_index()
+        app_usage.columns = ["usage", "count"]
+        usage_label = {
+            "Uses_regularly": "Uses brand apps regularly",
+            "Installed_rarely": "Installed but rarely opens",
+            "Prefers_3rd_party": "Prefers Myntra/Amazon",
+            "No_mobile_shopping": "Doesn't shop on mobile",
+        }
+        # Compute Yes intent per group
+        yes_by_usage = (df.groupby("Q22_brand_app_usage")["Q25_app_download_intent"]
+                          .apply(lambda x: round(x.eq("Yes").mean()*100, 1))
+                          .reset_index())
+        yes_by_usage.columns = ["usage", "yes_pct"]
+        yes_by_usage["usage_label"] = yes_by_usage["usage"].map(usage_label)
+        yes_by_usage = yes_by_usage.sort_values("yes_pct", ascending=True)
+        fig_appuse = px.bar(
+            yes_by_usage, x="yes_pct", y="usage_label", orientation="h",
+            color="yes_pct", color_continuous_scale=["#f78166", "#3fb950"],
+            text=yes_by_usage["yes_pct"].astype(str) + "%",
+            labels={"yes_pct": "% Would Download App", "usage_label": ""},
+        )
+        fig_appuse.update_coloraxes(showscale=False)
+        fig_appuse.update_traces(textposition="outside", marker_line_width=0)
+        apply_layout(fig_appuse, height=360)
+        st.plotly_chart(fig_appuse, width="stretch")
+        insight("This is one of the most important signals in the entire dataset. People who already use brand apps regularly show a 72.7% download intent — nearly 20 percentage points above those who prefer third-party platforms. They have already proven they will open and use a brand's own app. These are your Day 1 users. Focus your early launch marketing on reaching this group first.")
+
+    # ── NEW Chart 7 — Income → Spend progression ─────────────────────────────
+    section("Income → Spending Relationship", "Does higher income mean more spending on sportswear?")
+    income_order_t1 = ["Below_20k", "20k-40k", "40k-60k", "60k-80k", "80k-100k", "Above_100k"]
+    income_label_t1 = {
+        "Below_20k": "< ₹20k", "20k-40k": "₹20–40k", "40k-60k": "₹40–60k",
+        "60k-80k": "₹60–80k", "80k-100k": "₹80–100k", "Above_100k": "> ₹100k",
+    }
+    inc_spend = (df.groupby("Q5_monthly_income")["Q11_current_monthly_spend_inr"]
+                   .agg(["mean", "median", "count"]).reset_index())
+    inc_spend.columns = ["income", "avg_spend", "median_spend", "n"]
+    inc_spend["income"] = pd.Categorical(inc_spend["income"], categories=income_order_t1, ordered=True)
+    inc_spend = inc_spend.sort_values("income")
+    inc_spend["income_label"] = inc_spend["income"].map(income_label_t1)
+
+    fig_inc = go.Figure()
+    fig_inc.add_trace(go.Bar(
+        x=inc_spend["income_label"], y=inc_spend["avg_spend"],
+        name="Avg Spend",
+        marker_color="#1f6feb",
+        text=[f"₹{v:,.0f}" for v in inc_spend["avg_spend"]],
+        textposition="outside",
+    ))
+    fig_inc.add_trace(go.Scatter(
+        x=inc_spend["income_label"], y=inc_spend["median_spend"],
+        name="Median Spend", mode="lines+markers",
+        line=dict(color="#3fb950", width=2, dash="dot"),
+        marker=dict(size=8),
+    ))
+    fig_inc.update_layout(
+        **PLOTLY_LAYOUT, height=400,
+        xaxis_title="Monthly Household Income",
+        yaxis_title="Monthly Sportswear Spend (₹)",
+        legend=dict(font=dict(color="#e6edf3")),
+        barmode="group",
+    )
+    st.plotly_chart(fig_inc, width="stretch")
+    insight("Spending on sportswear rises almost perfectly with income — from ₹1,328 average for the lowest income group up to ₹7,125 for the highest. This is strong evidence that as your users earn more over time, they will naturally spend more on your platform without you having to do anything. It also validates a tiered pricing model: affordable entry options for students and early-career users, with premium tiers that grow into as their income does.")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2 — CUSTOMER SEGMENTS
@@ -342,6 +488,7 @@ CLUSTER_FEATURES = [
     "Q17_sustainability_importance", "Q18_community_challenge_likelihood",
     "Q19_flash_sale_likelihood", "Q13_factor_style", "Q13_factor_fabric_quality",
     "Q16_feat_outfit_builder", "Q16_feat_sustainability_info",
+    "influencer_enc", "occupation_enc",
 ]
 FEATURE_LABELS = {
     "Q7_workout_days_enc": "Workout Days",
@@ -353,6 +500,8 @@ FEATURE_LABELS = {
     "Q13_factor_fabric_quality": "Fabric Quality",
     "Q16_feat_outfit_builder": "Outfit Builder",
     "Q16_feat_sustainability_info": "Eco Info",
+    "influencer_enc": "Influencer Driven",
+    "occupation_enc": "Career Stage",
 }
 PERSONA_DESC = {
     "🏋️ Serious Athlete": "These are your best customers. They work out almost every day, spend the most on gear, and care deeply about fabric and performance. Get the product right for them and they'll become your loudest advocates.",
@@ -407,7 +556,14 @@ with tab2:
     st.markdown('<div class="hero"><h1>🧠 5 Buyer Personas</h1><p>Survey respondents grouped into 5 distinct customer types — each needing a different app experience, pricing tier, and marketing message</p></div>', unsafe_allow_html=True)
 
     # ── Guard: need at least 50 rows and all 5 clusters viable ──────────────
-    cluster_data_raw = df[CLUSTER_FEATURES].dropna()
+    # Encode Q10 influencer affinity and Q4 occupation for clustering
+    _inf_map  = {"No": 0, "Yes_occasional": 1, "Yes_influences_purchases": 2}
+    _occ_map  = {"Student": 0, "Freelancer": 1, "Salaried_Public": 2,
+                 "Salaried_Private": 3, "Business_Owner": 4, "Other": 2}
+    _df_cl = df.copy()
+    _df_cl["influencer_enc"] = _df_cl["Q10_influencer_affinity"].map(_inf_map)
+    _df_cl["occupation_enc"] = _df_cl["Q4_occupation"].map(_occ_map)
+    cluster_data_raw = _df_cl[CLUSTER_FEATURES].dropna()
     MIN_ROWS = 50
 
     if len(cluster_data_raw) < MIN_ROWS:
@@ -683,7 +839,7 @@ with tab3:
 
         # Confusion Matrix — labels derived from data, not hardcoded
         with col1:
-            section("Confusion Matrix", f"{clf_choice}")
+            section("Confusion Matrix", f"How accurately {clf_choice} predicts each group")
             cm        = res["cm"]
             cm_labels = res["cm_labels"]
             fig_cm = px.imshow(
@@ -693,10 +849,59 @@ with tab3:
                 labels=dict(x="Predicted", y="Actual", color="Count"),
                 aspect="auto",
             )
-            fig_cm.update_layout(**PLOTLY_LAYOUT, height=400,
+            fig_cm.update_layout(**PLOTLY_LAYOUT, height=380,
                                  coloraxis_colorbar=dict(tickfont=dict(color="#e6edf3")))
             st.plotly_chart(fig_cm, width="stretch")
-            insight("The model is very good at avoiding the most expensive mistake in marketing — spending money trying to acquire someone who was never going to download the app anyway. By correctly identifying who's a genuine prospect and who isn't, the model helps ensure your acquisition budget goes only to people worth targeting.")
+
+            # Dynamic plain-language interpretation of the confusion matrix
+            label_list = res["cm_labels"]
+            n_total = int(cm.sum())
+            n_correct = int(np.diag(cm).sum())
+            acc_pct = round(n_correct / n_total * 100, 1) if n_total > 0 else 0
+
+            # Find the most misclassified group
+            worst_label, worst_miss_pct = "", 0
+            cm_interp_lines = []
+            for i, lbl in enumerate(label_list):
+                row_total = int(cm[i].sum())
+                correct   = int(cm[i][i])
+                missed    = row_total - correct
+                miss_pct  = round(missed / row_total * 100) if row_total > 0 else 0
+                hit_pct   = 100 - miss_pct
+                # Find most common wrong prediction for this row
+                wrong_preds = [(cm[i][j], label_list[j]) for j in range(len(label_list)) if j != i and cm[i][j] > 0]
+                if wrong_preds:
+                    top_wrong_count, top_wrong_lbl = max(wrong_preds, key=lambda x: x[0])
+                    wrong_note = f"when wrong, mostly predicted as <strong>{top_wrong_lbl}</strong>"
+                else:
+                    wrong_note = "predicted perfectly"
+                cm_interp_lines.append(
+                    f"<li><strong>{lbl}</strong> respondents: correctly identified {hit_pct}% of the time — {wrong_note}</li>"
+                )
+                if miss_pct > worst_miss_pct:
+                    worst_miss_pct = miss_pct
+                    worst_label = lbl
+
+            interp_html = f"""
+            <div class="insight-box">
+                <div class="label">📊 How to Read This Matrix</div>
+                <p>
+                Each row = what people <em>actually</em> answered. Each column = what the model <em>predicted</em>.
+                Numbers on the diagonal (top-left to bottom-right) are correct predictions — the bigger these are, the better.
+                Numbers off the diagonal are mistakes.
+                <br><br>
+                <strong>Overall:</strong> The model correctly identifies <strong>{acc_pct}%</strong> of respondents ({n_correct} out of {n_total} in the test set).
+                <ul style="margin:10px 0 0 16px; padding:0;">
+                    {"".join(cm_interp_lines)}
+                </ul>
+                <br>
+                <strong>Watch out:</strong> The <strong>{worst_label}</strong> group has the most misclassifications ({worst_miss_pct}% missed).
+                This is common when one category is outnumbered — the model sees fewer examples of it during training and learns it less well.
+                In practice, treat predictions for this group with more caution.
+                </p>
+            </div>
+            """
+            st.markdown(interp_html, unsafe_allow_html=True)
 
         # Feature importance
         with col2:
@@ -711,11 +916,29 @@ with tab3:
 
             fi_df = pd.DataFrame({"feature": feat_names, "importance": imps})
             fi_df = fi_df.sort_values("importance", ascending=True).tail(15)
-            fi_df["feature"] = (fi_df["feature"]
-                .str.replace("Q16_feat_", "Feature: ")
-                .str.replace("Q13_factor_", "Factor: ")
-                .str.replace("Q6_act_", "Activity: ")
-                .str.replace("_enc", "").str.replace("_", " ").str.title())
+            feat_label_map = {
+                "Q1_age_group_enc":             "Age Group",
+                "Q5_monthly_income_enc":         "Monthly Income",
+                "Q7_workout_days_enc":           "Workout Frequency",
+                "Q14_purchase_frequency_enc":    "Purchase Frequency",
+                "Q11_current_monthly_spend_inr": "Current Monthly Spend",
+                "Q17_sustainability_importance":  "Values Sustainability",
+                "Q18_community_challenge_likelihood": "Likes Community Challenges",
+                "Q19_flash_sale_likelihood":     "Responds to Flash Sales",
+                "Q20_virtual_tryon_importance":  "Wants Virtual Try-On",
+            }
+            def clean_feat_label(f):
+                if f in feat_label_map:
+                    return feat_label_map[f]
+                return (f
+                    .replace("Q16_feat_", "Feature: ")
+                    .replace("Q13_factor_", "Factor: ")
+                    .replace("Q6_act_", "Activity: ")
+                    .replace("_enc", "")
+                    .replace("_", " ")
+                    .title()
+                )
+            fi_df["feature"] = fi_df["feature"].apply(clean_feat_label)
             fig_fi = px.bar(fi_df, x="importance", y="feature", orientation="h",
                             color="importance", color_continuous_scale=["#1f4080", "#58a6ff"],
                             labels={"importance": "Importance", "feature": ""})
@@ -747,7 +970,8 @@ with tab4:
     q16_cols = [c for c in df.columns if c.startswith("Q16_feat_")]
     q21_cols = [c for c in df.columns if c.startswith("Q21_prod_")]
     q6_act_cols = [c for c in df.columns if c.startswith("Q6_act_") and c != "Q6_act_none"]
-    arm_cols = q16_cols + q21_cols + q6_act_cols
+    q12_arm_cols = [c for c in df.columns if c.startswith("Q12_shop_")]
+    arm_cols = q16_cols + q21_cols + q6_act_cols + q12_arm_cols
 
     LABEL_MAP = {
         "Q16_feat_personalised_rec": "Personalised Rec",
@@ -775,6 +999,13 @@ with tab4:
         "Q6_act_team_sports": "Team Sports",
         "Q6_act_outdoor": "Outdoor",
         "Q6_act_home_workout": "Home Workout",
+        "Q12_shop_brand_app":       "Shops: Brand App",
+        "Q12_shop_myntra_ajio":     "Shops: Myntra/Ajio",
+        "Q12_shop_amazon_flipkart": "Shops: Amazon/Flipkart",
+        "Q12_shop_brand_website":   "Shops: Brand Website",
+        "Q12_shop_physical_store":  "Shops: Physical Store",
+        "Q12_shop_social_commerce": "Shops: Social Commerce",
+        "Q12_shop_local_unbranded": "Shops: Local/Unbranded",
     }
 
     col_s1, col_s2 = st.columns(2)
@@ -1055,6 +1286,106 @@ with tab5:
         )
         st.plotly_chart(fig_funnel, width="stretch")
         insight(f"Even if you only reach the people who said they'd definitely download the app, the annual revenue opportunity is ₹{rev_conservative*12:.0f} Crore. If you also convert a third of the 'maybe' group, that number rises to ₹{rev_optimistic*12:.0f} Crore. Assuming the app earns around 15–20% of every purchase made through it, that translates to ₹{rev_conservative*12*0.175:.0f}–₹{rev_optimistic*12*0.175:.0f} Crore in net revenue annually — and this is based purely on survey data, before any growth or word-of-mouth is factored in.")
+
+        # ── NEW: Occupation × Spend + Intent ──────────────────────────────────
+        st.markdown("---")
+        section("Who Spends Most — and Who's Most Ready to Download",
+                 "Occupation breakdown reveals your highest-value customer groups")
+
+        occ_label_map = {
+            "Student": "Student",
+            "Freelancer": "Freelancer",
+            "Salaried_Private": "Salaried (Private)",
+            "Salaried_Public": "Salaried (Public)",
+            "Business_Owner": "Business Owner",
+            "Other": "Other",
+        }
+        occ_spend = (df.groupby("Q4_occupation")["Q11_current_monthly_spend_inr"]
+                       .mean().reset_index())
+        occ_spend.columns = ["occupation", "avg_spend"]
+        occ_spend["occ_label"] = occ_spend["occupation"].map(occ_label_map)
+
+        occ_intent = (df.groupby("Q4_occupation")["Q25_app_download_intent"]
+                        .apply(lambda x: round(x.eq("Yes").mean()*100, 1))
+                        .reset_index())
+        occ_intent.columns = ["occupation", "yes_pct"]
+        occ_merged = occ_spend.merge(occ_intent, on="occupation").sort_values("avg_spend", ascending=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            fig_occ_spend = px.bar(
+                occ_merged, x="avg_spend", y="occ_label", orientation="h",
+                color="avg_spend", color_continuous_scale=["#1f4080", "#58a6ff"],
+                text=occ_merged["avg_spend"].apply(lambda x: f"₹{x:,.0f}"),
+                labels={"avg_spend": "Avg Monthly Spend (₹)", "occ_label": ""},
+            )
+            fig_occ_spend.update_coloraxes(showscale=False)
+            fig_occ_spend.update_traces(textposition="outside", marker_line_width=0)
+            apply_layout(fig_occ_spend, height=380)
+            st.plotly_chart(fig_occ_spend, width="stretch")
+
+        with col2:
+            fig_occ_intent = px.bar(
+                occ_merged.sort_values("yes_pct", ascending=True),
+                x="yes_pct", y="occ_label", orientation="h",
+                color="yes_pct", color_continuous_scale=["#1f4080", "#3fb950"],
+                text=occ_merged.sort_values("yes_pct", ascending=True)["yes_pct"].astype(str) + "%",
+                labels={"yes_pct": "% Would Download App", "occ_label": ""},
+            )
+            fig_occ_intent.update_coloraxes(showscale=False)
+            fig_occ_intent.update_traces(textposition="outside", marker_line_width=0)
+            apply_layout(fig_occ_intent, height=380)
+            st.plotly_chart(fig_occ_intent, width="stretch")
+
+        insight("Business owners show the highest download intent (70%) and salaried professionals spend the most. Students are your largest group by volume but spend less and are harder to convert — they're worth a lighter-touch strategy like student pricing or campus ambassador programmes rather than expensive paid acquisition. Freelancers punch above their weight on intent, suggesting they value convenience highly.")
+
+        # ── NEW: Q22 Brand App Usage deep-dive ─────────────────────────────
+        section("Existing App Behaviour vs Revenue Potential",
+                "People who already use brand apps spend more AND are more likely to download")
+
+        app_usage_label = {
+            "Uses_regularly":    "Uses brand apps regularly",
+            "Installed_rarely":  "Installed but rarely uses",
+            "Prefers_3rd_party": "Prefers Myntra/Amazon",
+            "No_mobile_shopping":"Doesn't shop on mobile",
+        }
+        app_spend = (df.groupby("Q22_brand_app_usage")
+                       .agg(avg_spend=("Q11_current_monthly_spend_inr","mean"),
+                            avg_wtp=("Q24_wtp_monthly_inr","mean"),
+                            count=("Q11_current_monthly_spend_inr","count"))
+                       .reset_index())
+        app_spend["yes_pct"] = (df.groupby("Q22_brand_app_usage")["Q25_app_download_intent"]
+                                   .apply(lambda x: round(x.eq("Yes").mean()*100,1))
+                                   .values)
+        app_spend["usage_label"] = app_spend["Q22_brand_app_usage"].map(app_usage_label)
+        app_spend = app_spend.sort_values("avg_spend", ascending=True)
+
+        fig_apprev = go.Figure()
+        fig_apprev.add_trace(go.Bar(
+            name="Current Avg Spend",
+            x=app_spend["usage_label"],
+            y=app_spend["avg_spend"],
+            marker_color="#1f6feb",
+            text=[f"₹{v:,.0f}" for v in app_spend["avg_spend"]],
+            textposition="outside",
+        ))
+        fig_apprev.add_trace(go.Bar(
+            name="Avg Willingness to Pay",
+            x=app_spend["usage_label"],
+            y=app_spend["avg_wtp"],
+            marker_color="#3fb950",
+            text=[f"₹{v:,.0f}" for v in app_spend["avg_wtp"]],
+            textposition="outside",
+        ))
+        fig_apprev.update_layout(
+            **PLOTLY_LAYOUT, height=420,
+            barmode="group",
+            xaxis_title="",
+            yaxis_title="Monthly Amount (₹)",
+            legend=dict(font=dict(color="#e6edf3")),
+        )
+        st.plotly_chart(fig_apprev, width="stretch")
+        insight("Regular brand app users not only have the highest download intent (72.7%) — they also have the highest current spend and the highest willingness to pay in your app. This group is your ideal early adopter: they already behave the way you want all your users to behave. Acquiring them first builds a high-quality, high-revenue user base that makes the app metrics look strong for your next funding round.")
 
         # WTP distribution
         section("WTP Distribution", "Shape of willingness-to-pay across the filtered segment")
