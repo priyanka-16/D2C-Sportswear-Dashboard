@@ -674,7 +674,7 @@ with tab3:
             for name, r in clf_results.items()
         ])
         st.dataframe(
-            metrics_df.style.applymap(lambda _: "background-color: #161b22; color: #e6edf3"),
+            metrics_df.style.map(lambda _: "background-color: #161b22; color: #e6edf3"),
             width="stretch", hide_index=True
         )
         insight(f"The model can reliably predict whether a given person will download the app or not. Crucially, the 'Maybe' group isn't ignored — these are people who are genuinely interested but not quite ready. That's not a lost customer; that's someone worth a follow-up offer. Treating them separately means you're not wasting budget on people who've already said no.")
@@ -971,7 +971,7 @@ with tab5:
             for name, r in reg_results.items()
         ])
         st.dataframe(
-            reg_metrics.style.applymap(lambda _: "background-color: #161b22; color: #e6edf3"),
+            reg_metrics.style.map(lambda _: "background-color: #161b22; color: #e6edf3"),
             width="stretch", hide_index=True
         )
 
@@ -982,7 +982,7 @@ with tab5:
         # Actual vs Predicted
         section("Actual vs Predicted Spend", f"Best model: {best_model_name}")
         scatter_df = pd.DataFrame({
-            "Actual (₹)": best_res["actual_inr"].values,
+            "Actual (₹)": best_res["actual_inr"],
             "Predicted (₹)": best_res["pred_inr"],
         })
         max_val = max(scatter_df["Actual (₹)"].max(), scatter_df["Predicted (₹)"].max())
@@ -1052,10 +1052,9 @@ with tab5:
         ))
         fig_funnel.update_layout(
             **PLOTLY_LAYOUT, height=420,
-            funnelmode="stack",
         )
         st.plotly_chart(fig_funnel, width="stretch")
-        insight(f"Even if you only reach the people who said they'd definitely download the app, the annual revenue opportunity is ₹{{rev_conservative*12:.0f}} Crore. If you also convert a third of the 'maybe' group, that number rises to ₹{{rev_optimistic*12:.0f}} Crore. Assuming the app earns around 15–20% of every purchase made through it, that translates to ₹{{rev_conservative*12*0.175:.0f}}–₹{{rev_optimistic*12*0.175:.0f}} Crore in net revenue annually — and this is based purely on survey data, before any growth or word-of-mouth is factored in.")
+        insight(f"Even if you only reach the people who said they'd definitely download the app, the annual revenue opportunity is ₹{rev_conservative*12:.0f} Crore. If you also convert a third of the 'maybe' group, that number rises to ₹{rev_optimistic*12:.0f} Crore. Assuming the app earns around 15–20% of every purchase made through it, that translates to ₹{rev_conservative*12*0.175:.0f}–₹{rev_optimistic*12*0.175:.0f} Crore in net revenue annually — and this is based purely on survey data, before any growth or word-of-mouth is factored in.")
 
         # WTP distribution
         section("WTP Distribution", "Shape of willingness-to-pay across the filtered segment")
@@ -1075,4 +1074,4 @@ with tab5:
         fig_wtp.update_traces(marker_line_width=0)
         apply_layout(fig_wtp, height=380)
         st.plotly_chart(fig_wtp, width="stretch")
-        insight(f"Most customers are comfortable spending around ₹{{df['Q24_wtp_monthly_inr'].median():,.0f}} a month on this app — that's your sweet spot for standard pricing. But a smaller group is willing to spend ₹5,000 or more, and they'll happily pay for a premium experience if you build one. A two-tier pricing structure — an accessible base plan and a premium plan with exclusive perks — lets you serve both groups without leaving money on the table.")
+        insight(f"Most customers are comfortable spending around ₹{df['Q24_wtp_monthly_inr'].median():,.0f} a month on this app — that's your sweet spot for standard pricing. But a smaller group is willing to spend ₹5,000 or more, and they'll happily pay for a premium experience if you build one. A two-tier pricing structure — an accessible base plan and a premium plan with exclusive perks — lets you serve both groups without leaving money on the table.")
